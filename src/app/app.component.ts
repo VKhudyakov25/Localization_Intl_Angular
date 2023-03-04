@@ -1,8 +1,10 @@
 import { Component } from '@angular/core';
 
-import { Product, AppService } from './app.service';
-import DataSource from 'devextreme/data/data_source';
-import CustomStore from 'devextreme/data/custom_store';
+import deMessages from 'devextreme/localization/messages/de.json';
+import ruMessages from 'devextreme/localization/messages/ru.json';
+
+import { AppService, Locale, Payment } from './app.service';
+import { loadMessages, locale, formatMessage } from 'devextreme/localization';
 
 @Component({
   selector: 'app-root',
@@ -11,52 +13,36 @@ import CustomStore from 'devextreme/data/custom_store';
   providers: [AppService],
 })
 export class AppComponent {
-  products: Product[];
-  productsDataSource: DataSource;
-  myStore: CustomStore;
-  searchModeOption = 'contains';
-  searchExprOption: any = 'Name';
-  searchTimeoutOption = 200;
-  minSearchLengthOption = 0;
-  showDataBeforeSearchOption = false;
+  locale: string;
 
-  constructor(service: AppService) {
-    this.products = service.getProducts();
-    this.myStore = new CustomStore({
-      key: 'id',
-      loadMode: 'raw',
-      load: () => {
-        return service.getProducts();
-      },
-      insert: (val) => {
-        return service.insertProduct(val);
-      },
-    });
-    this.productsDataSource = new DataSource({
-      store: this.myStore,
-    });
+  locales: Locale[];
+
+  payments: Payment[];
+
+  formatMessage = formatMessage;
+  constructor(private service: AppService) {
+    this.locale = this.getLocale();
+    this.payments = service.getPayments();
+    this.locales = service.getLocales();
+    this.initMessages();
+    locale(this.locale);
   }
 
-  addCustomItem = (data: any) => {
-    if (!data.text) {
-      data.customItem = null;
-      return;
-    }
-    let productIds: any;
-    this.myStore.load().then((e: any) => {
-      productIds = e.map((item: Product) => item.id);
-    });
-    let incrementedId = Math.max.apply(null, productIds) + 1;
-    let newItem = {
-      Name: data.text,
-      id: incrementedId,
-    };
-    this.myStore
-      .insert(newItem)
-      .then(() => this.productsDataSource.load())
-      .then(() => newItem)
-      .catch((error) => {
-        throw error;
-      });
-  };
+  initMessages() {
+    loadMessages(deMessages);
+    loadMessages(ruMessages);
+    loadMessages(this.service.getDictionary());
+  }
+  changeLocale(data: any) {
+    console.log('data :>> ', data);
+    this.setLocale(data.value);
+    parent.document.location.reload();
+  }
+  getLocale() {
+    const storageLocale = sessionStorage.getItem('locale');
+    return storageLocale != null ? storageLocale : 'en';
+  }
+  setLocale(savingLocale: any) {
+    sessionStorage.setItem('locale', savingLocale);
+  }
 }
